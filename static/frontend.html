@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSV Upload – Entra Bulk Onboarding & Offboarding</title>
+</head>
+<body>
+  <h2>Microsoft Entra ID - Bulk User Onboarding & Offboarding</h2>
+
+  <label><b>Choose Action:</b></label><br/>
+  <input type="radio" name="mode" value="onboard" checked> Onboard Users<br/>
+  <input type="radio" name="mode" value="offboard"> Offboard Users<br/><br/>
+
+  <form id="csvForm" enctype="multipart/form-data">
+    <input type="file" id="csvFile" accept=".csv" required />
+    <br/><br/>
+    <button type="submit">Upload & Execute</button>
+  </form>
+
+  <pre id="output"></pre>
+
+  <script>
+    document.getElementById("csvForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const file = document.getElementById("csvFile").files[0];
+      const mode = document.querySelector('input[name="mode"]:checked').value;
+      const text = await file.text();
+      const lines = text.trim().split("\n");
+      const headers = lines[0].split(",");
+
+      const users = lines.slice(1).map(line => {
+        const values = line.split(",");
+        return Object.fromEntries(headers.map((h, i) => [h, values[i]]));
+      });
+
+      let output = "";
+      for (const user of users) {
+        let payload = { action: mode };
+        if (mode === "onboard") {
+          payload.displayName = user.displayName;
+          payload.nickname = user.nickname;
+          payload.upn = user.upn;
+          payload.password = user.password;
+        } else if (mode === "offboard") {
+          payload.user_id = user.user_id;
+        }
+
+        const response = await fetch("/trigger", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        output += `▶ ${mode.toUpperCase()} → ${JSON.stringify(payload)} → ${response.status}: ${JSON.stringify(result)}\n\n`;
+        document.getElementById("output").innerText = output;
+      }
+    });
+  </script>
+</body>
+</html>

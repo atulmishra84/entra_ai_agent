@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: entra-ai-agent
+    env: python
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    plan: free
+    envVars:
+      - key: TENANT_ID
+        value: YOUR_TENANT_ID
+      - key: CLIENT_ID
+        value: YOUR_CLIENT_ID
+      - key: CLIENT_SECRET
+        value: YOUR_CLIENT_SECRET
